@@ -5,12 +5,9 @@
     android:layout_height="match_parent"
     tools:context=".FragmentMypage">
 
-    <TextView
+    <RelativeLayout
+        android:id="@+id/map_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="마이페이지"
-        android:textColor="@android:color/black"
-        android:textSize="50sp"/>
+        android:layout_height="match_parent"/>
 
 </LinearLayout>
