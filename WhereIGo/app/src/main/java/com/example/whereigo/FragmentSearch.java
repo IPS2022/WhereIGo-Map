@@ -14,6 +14,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,9 +25,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
@@ -35,24 +38,28 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.libraries.places.api.Places;
-import com.google.android.gms.location.LocationRequest;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class FragmentSearch extends Fragment
         implements OnMapReadyCallback {
-
+    Button btnLocation;
     private FragmentActivity mContext;
 
     private static final String TAG = FragmentSearch.class.getSimpleName();
@@ -80,6 +87,9 @@ public class FragmentSearch extends Fragment
     public FragmentSearch() {
     }
 
+
+
+
     @Override
     public void onAttach(Activity activity) { // Fragment 가 Activity에 attach 될 때 호출된다.
         mContext =(FragmentActivity) activity;
@@ -90,6 +100,7 @@ public class FragmentSearch extends Fragment
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 초기화 해야 하는 리소스들을 여기서 초기화 해준다.
+
     }
 
     @Nullable
@@ -100,15 +111,49 @@ public class FragmentSearch extends Fragment
             mCurrentLocatiion = savedInstanceState.getParcelable(KEY_LOCATION);
             CameraPosition mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
-        View layout =  inflater.inflate(R.layout.fragment_search,container,false);
-        mapView = (MapView)layout.findViewById(R.id.map);
-        if(mapView != null) {
+
+        View layout = inflater.inflate(R.layout.fragment_search, container, false);
+        mapView = (MapView) layout.findViewById(R.id.map);
+
+        if (mapView != null) {
             mapView.onCreate(savedInstanceState);
         }
+
+
         assert mapView != null;
         mapView.getMapAsync(this);
+        
+
+
+/*
+//이상함
+// Initialize the AutocompleteSupportFragment.
+        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                getChildFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+
+        // Specify the types of place data to return.
+        Objects.requireNonNull(autocompleteFragment).setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+
+        // Set up a PlaceSelectionListener to handle the response.
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(@NonNull Place place) {
+                Log.i(TAG, "Place: " + place.getName() + ", " + place.getId());
+            }
+
+
+            @Override
+            public void onError(@NonNull Status status) {
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
+        
+ */
         return layout;
+
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
