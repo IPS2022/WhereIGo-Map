@@ -45,4 +45,21 @@ dependencies {
     //bottom navi
     //noinspection GradleCompatible
     implementation 'com.android.support:design:28.0.0'
+
+
+    //구글맵 사용을 위함
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.navigation:navigation-fragment:2.2.2'
+    implementation 'androidx.navigation:navigation-ui:2.2.2'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    //new implementation
+    implementation 'com.squareup.okhttp3:okhttp:4.1.0'
+    //for API place autocomplete
+    //implementation 'com.google.android.gms:play-services-places:16.0.0'
+    implementation 'com.google.android.libraries.places:places:1.0.0'
+
+    //주변 검색
+    implementation 'noman.placesapi:placesAPI:1.1.3'
+
 }
