@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.mapforactivity">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -12,14 +13,18 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.WhereIGo"
+        android:theme="@style/Theme.MapForActivity"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
 
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA7UC43WxmTnYcxwLbrA0Kl8wryCT1VPfQ"/>
 
-        <activity
-            android:name=".MainActivity"
+        <uses-library android:name="org.apache.http.legacy"
+            android:required="false"/>
+
+        <activity android:name=".MainActivity"
             android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,9 +32,5 @@
             </intent-filter>
         </activity>
 
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBL8azprV5drYS_omoLbg43OVXaCk-q4oc" />
     </application>
-
 </manifest>
