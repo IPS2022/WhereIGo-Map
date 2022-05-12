@@ -12,14 +12,31 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <SearchView
+    <LinearLayout
+        android:layout_marginTop="500dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/sv_location"
-        android:queryHint="위치 기반으로 검색"
-        android:iconifiedByDefault="false"
-        android:layout_margin="10dp"
-        android:elevation="5dp"
-        android:background="@drawable/bg_round"/>
+        android:orientation="vertical">
+
+        <SearchView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/sv_location"
+            android:queryHint="위치 기반으로 검색"
+            android:iconifiedByDefault="false"
+            android:layout_margin="10dp"
+            android:elevation="5dp"
+            android:background="@drawable/bg_round"/>
+
+        <SearchView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/sv_keyword"
+            android:queryHint="키워드 기반으로 검색"
+            android:iconifiedByDefault="false"
+            android:layout_margin="10dp"
+            android:elevation="5dp"
+            android:background="@drawable/bg_round"/>
+    </LinearLayout>
 
 </RelativeLayout>
