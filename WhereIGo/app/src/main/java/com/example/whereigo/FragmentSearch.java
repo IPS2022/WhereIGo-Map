@@ -18,8 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -29,7 +28,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -40,67 +38,45 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.api.model.RectangularBounds;
-import com.google.android.libraries.places.api.model.TypeFilter;
-import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
-import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
-import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
-import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
-public class FragmentSearch extends Fragment implements OnMapReadyCallback {
-    Button btnLocation;
+
+public class FragmentSearch extends Fragment implements OnMapReadyCallback, ActivityCompat.OnRequestPermissionsResultCallback {
+
     private FragmentActivity mContext;
-
     private static final String TAG = FragmentSearch.class.getSimpleName();
-    private GoogleMap mMap;
-
-    private MapView mapView = null;
     private Marker currentMarker = null;
-
     private FusedLocationProviderClient mFusedLocationProviderClient; // Deprecated된 FusedLocationApi를 대체
     private LocationRequest locationRequest;
     private Location mCurrentLocatiion;
-
     private final LatLng mDefaultLocation = new LatLng(37.56, 126.97);
-    private static final int DEFAULT_ZOOM = 15;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
-
-    private static final int GPS_ENABLE_REQUEST_CODE = 2001;
     private static final int UPDATE_INTERVAL_MS = 1000 * 60 * 1;  // 1분 단위 시간 갱신
     private static final int FASTEST_UPDATE_INTERVAL_MS = 1000 * 30 ; // 30초 단위로 화면 갱신
-
     private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
-
     private static int AUTOCOMPLETE_REQUEST_CODE = 200;
-    PlacesClient placesClient;
 
-
-    // Set the fields to specify which types of place data to
-    // return after the user has made a selection.
-    List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
-
+    GoogleMap map;
+    SupportMapFragment mapFragment;
+    SearchView searchView;
 
     public FragmentSearch() {
     }
@@ -111,19 +87,11 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
         super.onAttach(activity);
     }
 
-    /*
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // 초기화 해야 하는 리소스들을 여기서 초기화 해준다.
-
-    }
-
-     */
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
+
         // Layout 을 inflate 하는 곳이다.
         if (savedInstanceState != null) {
             mCurrentLocatiion = savedInstanceState.getParcelable(KEY_LOCATION);
@@ -131,45 +99,44 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
         }
 
         View layout = inflater.inflate(R.layout.fragment_search, container, false);
-        mapView = (MapView) layout.findViewById(R.id.map);
+        mapFragment=(SupportMapFragment)this.getChildFragmentManager().findFragmentById(R.id.google_map);
+        searchView=layout.findViewById(R.id.sv_location);
 
-        if (mapView != null) {
-            mapView.onCreate(savedInstanceState);
+
+        if (mapFragment != null) {
+            mapFragment.onCreate(savedInstanceState);
         }
 
-
-        assert mapView != null;
-        mapView.getMapAsync(this);
-
-
-        //search 추가
-        //String apiKey = getString(R.string.API_KEY);
-        if (!Places.isInitialized()) {
-            Places.initialize(getActivity().getApplicationContext(),"AIzaSyBL8azprV5drYS_omoLbg43OVXaCk-q4oc");
-        }
-        Places.initialize(getActivity().getApplicationContext(),"AIzaSyBL8azprV5drYS_omoLbg43OVXaCk-q4oc");
-        placesClient = Places.createClient(getContext());
-        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
-                getChildFragmentManager().findFragmentById(R.id.autocomplete_fragment);
-        autocompleteFragment.setTypeFilter(TypeFilter.ESTABLISHMENT);
-        autocompleteFragment.setLocationBias(RectangularBounds.newInstance(
-                new LatLng(-33.880490,151.184363),
-                new LatLng(-33.858754,151.229596)));
-        autocompleteFragment.setCountries("IN");
-
-        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+        //위치기반 검색
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public void onPlaceSelected(Place place) {
-                Log.i(TAG, "Place: " + place.getName() + ", " + place.getId());
+            public boolean onQueryTextSubmit(String s) {
+                String location=searchView.getQuery().toString();
+                List<Address> addressList=null;
+
+                if (location != null || !location.equals("")){
+                    Geocoder geocoder = new Geocoder(getActivity());
+                    try {
+                        addressList=geocoder.getFromLocationName(location,1);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Address address = addressList.get(0);
+                    LatLng latLng = new LatLng(address.getLatitude(),address.getLongitude());
+                    map.addMarker(new MarkerOptions().position(latLng).title(location));
+                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,10));
+                }
+
+                return false;
             }
 
             @Override
-            public void onError(Status status) {
-                Log.i(TAG, "An error occurred: " + status);
+            public boolean onQueryTextChange(String s) {
+                return false;
             }
         });
 
+        mapFragment.getMapAsync(this);
         return layout;
 
     }
@@ -216,12 +183,12 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        mapView.onSaveInstanceState(outState);
+        mapFragment.onSaveInstanceState(outState);
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
+        map = googleMap;
 
         setDefaultLocation(); // GPS를 찾지 못하는 장소에 있을 경우 지도의 초기 위치가 필요함.
 
@@ -233,16 +200,16 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateLocationUI() {
-        if (mMap == null) {
+        if (map == null) {
             return;
         }
         try {
             if (mLocationPermissionGranted) {
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                map.setMyLocationEnabled(true);
+                map.getUiSettings().setMyLocationButtonEnabled(true);
             } else {
-                mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                map.setMyLocationEnabled(false);
+                map.getUiSettings().setMyLocationButtonEnabled(false);
                 mCurrentLocatiion = null;
                 getLocationPermission();
             }
@@ -260,10 +227,10 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
         markerOptions.snippet("위치 퍼미션과 GPS 활성 여부 확인하세요");
         markerOptions.draggable(true);
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-        currentMarker = mMap.addMarker(markerOptions);
+        currentMarker = map.addMarker(markerOptions);
 
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(mDefaultLocation, 15);
-        mMap.moveCamera(cameraUpdate);
+        map.moveCamera(cameraUpdate);
     }
 
     String getCurrentAddress(LatLng latlng) {
@@ -341,10 +308,10 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
         markerOptions.snippet(markerSnippet);
         markerOptions.draggable(true);
 
-        currentMarker = mMap.addMarker(markerOptions);
+        currentMarker = map.addMarker(markerOptions);
 
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(currentLatLng);
-        mMap.moveCamera(cameraUpdate);
+        map.moveCamera(cameraUpdate);
     }
 
     private void getDeviceLocation() {
@@ -394,14 +361,14 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     @Override
     public void onStart() { // 유저에게 Fragment가 보이도록 해준다.
         super.onStart();
-        mapView.onStart();
+        mapFragment.onStart();
         Log.d(TAG, "onStart ");
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        mapView.onStop();
+        mapFragment.onStop();
         if (mFusedLocationProviderClient != null) {
             Log.d(TAG, "onStop : removeLocationUpdates");
             mFusedLocationProviderClient.removeLocationUpdates(locationCallback);
@@ -412,25 +379,25 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     @Override
     public void onResume() { // 유저에게 Fragment가 보여지고, 유저와 상호작용이 가능하게 되는 부분
         super.onResume();
-        mapView.onResume();
+        mapFragment.onResume();
         if (mLocationPermissionGranted) {
             Log.d(TAG, "onResume : requestLocationUpdates");
             mFusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
-            if (mMap!=null)
-                mMap.setMyLocationEnabled(true);
+            if (map!=null)
+                map.setMyLocationEnabled(true);
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        mapView.onPause();
+        mapFragment.onPause();
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        mapView.onLowMemory();
+        mapFragment.onLowMemory();
     }
 
     @Override
@@ -446,100 +413,7 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     public void onDestroy() {
         // Destroy 할 때는, 반대로 OnDestroyView에서 View를 제거하고, OnDestroy()를 호출한다.
         super.onDestroy();
-        mapView.onDestroy();
+        mapFragment.onDestroy();
     }
 
-
-
-/*
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        ViewGroup rootView = (ViewGroup) inflater.inflate(R.layout.fragment_search, container, false);
-
-        mapView = (MapView)rootView.findViewById(R.id.map);
-        mapView.getMapAsync(this);
-
-        return rootView;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        mapView.onStart();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        mapView.onStop();
-    }
-
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        mapView.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mapView.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mapView.onLowMemory();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        mapView.onLowMemory();
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-//액티비티가 처음 생성될 때 실행되는 함수
-
-        if(mapView != null)
-        {
-            mapView.onCreate(savedInstanceState);
-        }
-    }
-
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        LatLng SEOUL = new LatLng(37.56, 126.97);
-
-        MarkerOptions markerOptions = new MarkerOptions();
-
-        markerOptions.position(SEOUL);
-
-        markerOptions.title("서울");
-
-        markerOptions.snippet("수도");
-
-        googleMap.addMarker(markerOptions);
-
-        googleMap.moveCamera(CameraUpdateFactory.newLatLng(SEOUL));
-
-        googleMap.animateCamera(CameraUpdateFactory.zoomTo(13));
-    }
-
-*/
 }
-
-
