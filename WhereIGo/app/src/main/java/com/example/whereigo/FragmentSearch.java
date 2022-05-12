@@ -1,8 +1,12 @@
 package com.example.whereigo;
 
+import static android.app.Activity.RESULT_CANCELED;
+import static android.app.Activity.RESULT_OK;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -25,6 +29,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -44,10 +49,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.RectangularBounds;
+import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -57,8 +67,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-public class FragmentSearch extends Fragment
-        implements OnMapReadyCallback {
+public class FragmentSearch extends Fragment implements OnMapReadyCallback {
     Button btnLocation;
     private FragmentActivity mContext;
 
@@ -84,11 +93,17 @@ public class FragmentSearch extends Fragment
     private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
 
+    private static int AUTOCOMPLETE_REQUEST_CODE = 200;
+    PlacesClient placesClient;
+
+
+    // Set the fields to specify which types of place data to
+    // return after the user has made a selection.
+    List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
+
+
     public FragmentSearch() {
     }
-
-
-
 
     @Override
     public void onAttach(Activity activity) { // Fragment 가 Activity에 attach 될 때 호출된다.
@@ -96,12 +111,15 @@ public class FragmentSearch extends Fragment
         super.onAttach(activity);
     }
 
+    /*
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 초기화 해야 하는 리소스들을 여기서 초기화 해준다.
 
     }
+
+     */
 
     @Nullable
     @Override
@@ -122,36 +140,53 @@ public class FragmentSearch extends Fragment
 
         assert mapView != null;
         mapView.getMapAsync(this);
-        
 
 
-/*
-//이상함
-// Initialize the AutocompleteSupportFragment.
+        //search 추가
+        //String apiKey = getString(R.string.API_KEY);
+        if (!Places.isInitialized()) {
+            Places.initialize(getActivity().getApplicationContext(),"AIzaSyBL8azprV5drYS_omoLbg43OVXaCk-q4oc");
+        }
+        Places.initialize(getActivity().getApplicationContext(),"AIzaSyBL8azprV5drYS_omoLbg43OVXaCk-q4oc");
+        placesClient = Places.createClient(getContext());
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getChildFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+        autocompleteFragment.setTypeFilter(TypeFilter.ESTABLISHMENT);
+        autocompleteFragment.setLocationBias(RectangularBounds.newInstance(
+                new LatLng(-33.880490,151.184363),
+                new LatLng(-33.858754,151.229596)));
+        autocompleteFragment.setCountries("IN");
 
-
-        // Specify the types of place data to return.
-        Objects.requireNonNull(autocompleteFragment).setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
-
-        // Set up a PlaceSelectionListener to handle the response.
+        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
-            public void onPlaceSelected(@NonNull Place place) {
+            public void onPlaceSelected(Place place) {
                 Log.i(TAG, "Place: " + place.getName() + ", " + place.getId());
             }
 
-
             @Override
-            public void onError(@NonNull Status status) {
+            public void onError(Status status) {
                 Log.i(TAG, "An error occurred: " + status);
             }
         });
-        
- */
+
         return layout;
 
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                Place place = Autocomplete.getPlaceFromIntent(data);
+                Log.i(TAG, "Place: " + place.getName() + ", " + place.getId());
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                Status status = Autocomplete.getStatusFromIntent(data);
+                Log.i(TAG, status.getStatusMessage());
+            } else if (resultCode == RESULT_CANCELED) {
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
 
@@ -163,6 +198,7 @@ public class FragmentSearch extends Fragment
 
         //액티비티가 처음 생성될 때 실행되는 함수
         MapsInitializer.initialize(mContext);
+
         //mLocationRequest=new LocationRequest.Builder(long intervalMillis);
         locationRequest = new LocationRequest()
                 .setInterval(UPDATE_INTERVAL_MS) // 위치가 Update 되는 주기
@@ -372,6 +408,7 @@ public class FragmentSearch extends Fragment
         }
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onResume() { // 유저에게 Fragment가 보여지고, 유저와 상호작용이 가능하게 되는 부분
         super.onResume();
