@@ -15,8 +15,6 @@
         android:theme="@style/Theme.WhereIGo"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
 
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-
         <activity
             android:name=".MainActivity"
             android:exported="true">

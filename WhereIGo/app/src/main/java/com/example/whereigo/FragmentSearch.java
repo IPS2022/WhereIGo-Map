@@ -28,6 +28,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
+import com.example.whereigo.Retrofit.ApiClient;
+import com.example.whereigo.Retrofit.ApiInterface;
+import com.example.whereigo.Retrofit.CategoryResult;
+import com.example.whereigo.Retrofit.Document;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -50,14 +54,19 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-public class FragmentSearch extends Fragment implements OnMapReadyCallback, ActivityCompat.OnRequestPermissionsResultCallback {
+public class FragmentSearch extends Fragment implements OnMapReadyCallback, ActivityCompat.OnRequestPermissionsResultCallback,GoogleMap.OnInfoWindowClickListener {
 
     private FragmentActivity mContext;
     private static final String TAG = FragmentSearch.class.getSimpleName();
@@ -77,6 +86,11 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback, Acti
     GoogleMap map;
     SupportMapFragment mapFragment;
     SearchView searchView;
+
+    //kakao
+    public static final String BASE_URL="https://dapi.kakao.com/";
+    public static final String API_KEY="KakaoAK 43a1685031ab42f53d19f1988e483e81";  //RESTAPI 키
+    ApiInterface apiInterface;
 
     public FragmentSearch() {
     }
@@ -136,10 +150,88 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback, Acti
             }
         });
 
+
+        //kakao api function 호출
+        searchKeyword("음식점");
+
         mapFragment.getMapAsync(this);
         return layout;
 
     }
+
+
+    private void searchKeyword(String keyword) {
+        apiInterface = ApiClient.getApiClient().create(ApiInterface.class);
+        Call<CategoryResult> call = apiInterface.getSearchLocation(
+                API_KEY,
+                keyword,
+                15,
+                1,
+                "",
+                "",
+                "");
+
+        call.enqueue(new Callback<CategoryResult>() {
+            @SuppressLint("NotifyDataSetChanged")
+            @Override
+            public void onResponse(@NotNull Call<CategoryResult> call, @NotNull Response<CategoryResult> response) {
+                if (response.isSuccessful()) {
+                    assert response.body() != null;
+                    //map.clear();
+                    for (Document document : response.body().getDocuments()) {
+                        Log.e("getKeyHash", document.getPlaceName());
+                        //map.add(document);
+                    }
+                    //map.notifyDataSetChanged();
+                } else {
+                    Log.e("getKeyHash 111", response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call<CategoryResult> call, @NotNull Throwable t) {
+
+            }
+        });
+    }
+
+
+    /*
+    //kakao api
+    // 키워드 검색 함수
+    private void searchKeyword(String keyword) {
+        //retrofit 객체 구성
+        Retrofit retrofit=new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()))
+                .client(httpClient.build())
+                .build();
+
+        KakaoAPI api=retrofit.create(KakaoAPI.class); // 통신 인터페이스를 객체로 생성
+        Call<ResultSearchKeyword> call=api.getSearchKeyword(API_KEY,keyword); // 검색 조건 입력
+
+        // API 서버에 요청
+        call.enqueue(new Callback<ResultSearchKeyword>() {
+            @Override
+            public void onResponse(Call<ResultSearchKeyword> call, Response<ResultSearchKeyword> response) {
+                // 통신 성공 (검색 결과는 response.body()에 담겨있음)
+                Log.d("Test", "Raw: ${response.raw()}");
+                Log.d("Test", "Body: ${response.body()}");
+            }
+
+            @Override
+            public void onFailure(Call<ResultSearchKeyword> call, Throwable t) {
+                Log.w("MainActivity", "통신 실패: ${t.message}");
+            }
+        });
+
+
+    }
+
+     */
+
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -197,6 +289,15 @@ public class FragmentSearch extends Fragment implements OnMapReadyCallback, Acti
         updateLocationUI();
 
         getDeviceLocation();
+
+        //정보창
+        googleMap.setOnInfoWindowClickListener(this);
+
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Toast.makeText(this.getContext(), "Info window clicked", Toast.LENGTH_SHORT).show();
     }
 
     private void updateLocationUI() {
